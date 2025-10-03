@@ -1,6 +1,6 @@
 import axios, { isAxiosError } from "axios";
 
-const apiClient = axios.create({
+const axiosClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL ?? "",
   headers: {
     "Content-Type": "application/json",
@@ -37,4 +37,71 @@ export const extractApiErrorMessage = (
   return fallbackMessage;
 };
 
-export { apiClient, isAxiosError };
+// Fetch-based API client for new features
+class FetchClient {
+  private baseURL: string;
+
+  constructor(baseURL?: string) {
+    this.baseURL = baseURL || process.env.NEXT_PUBLIC_API_BASE_URL || "";
+  }
+
+  private async request<T = any>(
+    url: string,
+    options: RequestInit = {}
+  ): Promise<Response> {
+    const fullURL = this.baseURL ? `${this.baseURL}${url}` : url;
+
+    const response = await fetch(fullURL, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+    });
+
+    return response;
+  }
+
+  async get<T = any>(url: string, options?: RequestInit): Promise<Response> {
+    return this.request<T>(url, {
+      ...options,
+      method: "GET",
+    });
+  }
+
+  async post<T = any>(
+    url: string,
+    options?: RequestInit & { json?: any }
+  ): Promise<Response> {
+    const { json, ...restOptions } = options || {};
+
+    return this.request<T>(url, {
+      ...restOptions,
+      method: "POST",
+      body: json ? JSON.stringify(json) : restOptions.body,
+    });
+  }
+
+  async put<T = any>(
+    url: string,
+    options?: RequestInit & { json?: any }
+  ): Promise<Response> {
+    const { json, ...restOptions } = options || {};
+
+    return this.request<T>(url, {
+      ...restOptions,
+      method: "PUT",
+      body: json ? JSON.stringify(json) : restOptions.body,
+    });
+  }
+
+  async delete<T = any>(url: string, options?: RequestInit): Promise<Response> {
+    return this.request<T>(url, {
+      ...options,
+      method: "DELETE",
+    });
+  }
+}
+
+export const apiClient = new FetchClient();
+export { axiosClient, isAxiosError };

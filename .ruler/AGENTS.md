@@ -6,6 +6,7 @@
 - always use promise for page.tsx params props.
 - use valid picsum.photos stock image for placeholder image
 - route feature hooks' HTTP requests through `@/lib/remote/api-client`.
+- **always verify all checks pass before reporting completion**: `npx tsc --noEmit` (type check) → `npm run lint` (lint check) → `npm run build` (build check). Never report success if any check fails.
 
 ## Library
 
