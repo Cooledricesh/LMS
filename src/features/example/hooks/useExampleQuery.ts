@@ -13,8 +13,9 @@ const fetchExample = async (id: string) => {
       throw new Error(error.error?.message || 'Failed to fetch example');
     }
 
+    // respond 함수는 성공시 데이터를 바로 반환함
     const result = await response.json();
-    return ExampleResponseSchema.parse(result.data);
+    return ExampleResponseSchema.parse(result);
   } catch (error) {
     const message = extractApiErrorMessage(error, 'Failed to fetch example.');
     throw new Error(message);

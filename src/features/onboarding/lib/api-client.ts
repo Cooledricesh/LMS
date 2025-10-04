@@ -15,21 +15,28 @@ export const signup = async (data: SignupRequest): Promise<SignupResponse> => {
     throw new Error(error.error?.message || '회원가입에 실패했습니다');
   }
 
+  // respond 함수는 성공시 데이터를 바로 반환함
   const result = await response.json();
-  return result.data;
+  return result;
 };
 
 /**
  * 최신 약관 조회 API
  */
 export const fetchLatestTerms = async (): Promise<TermsResponse> => {
-  const response = await apiClient.get('/api/terms/latest');
+  try {
+    const response = await apiClient.get('/api/terms/latest');
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || '약관 조회에 실패했습니다');
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error?.message || '약관 조회에 실패했습니다');
+    }
+
+    // respond 함수는 성공시 데이터를 바로 반환함
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('fetchLatestTerms error:', error);
+    throw error;
   }
-
-  const result = await response.json();
-  return result.data;
 };
