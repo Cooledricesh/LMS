@@ -34,6 +34,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [isFormValid, setIsFormValid] = useState(false);
 
   const { mutate: signup, isPending: isSigningUp } = useSignup({
     onValidationError: (serverErrors) => {
@@ -50,12 +51,36 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
   });
   const { data: termsData, isLoading: isLoadingTerms } = useTerms();
 
-  // 실시간 검증
+  // 실시간 검증 및 폼 유효성 확인
   useEffect(() => {
     if (Object.keys(touched).length > 0) {
       const validation = validateSignupForm(formData);
       setErrors(validation.errors);
     }
+
+    // 폼 유효성 확인
+    const checkFormValidity = () => {
+      // 모든 필수 필드가 채워졌는지 확인
+      const hasAllFields =
+        formData.email &&
+        formData.password &&
+        formData.confirmPassword &&
+        formData.role &&
+        formData.name &&
+        formData.phoneNumber &&
+        formData.termsAgreed.service &&
+        formData.termsAgreed.privacy;
+
+      if (!hasAllFields) {
+        return false;
+      }
+
+      // 검증 실행
+      const validation = validateSignupForm(formData);
+      return validation.valid;
+    };
+
+    setIsFormValid(checkFormValidity());
   }, [formData, touched]);
 
   const handleInputChange = useCallback(
@@ -301,11 +326,26 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
       {/* 제출 버튼 */}
       <button
         type="submit"
-        disabled={isSigningUp || isLoadingTerms}
-        className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+        disabled={!isFormValid || isSigningUp || isLoadingTerms}
+        className={`
+          w-full rounded-md px-4 py-2 text-sm font-medium text-white transition
+          ${
+            isFormValid && !isSigningUp && !isLoadingTerms
+              ? 'bg-slate-900 hover:bg-slate-700 cursor-pointer'
+              : 'bg-slate-400 cursor-not-allowed'
+          }
+        `}
+        title={!isFormValid ? '모든 필드를 올바르게 입력해주세요' : ''}
       >
         {isSigningUp ? '회원가입 중...' : '회원가입'}
       </button>
+
+      {/* 안내 메시지 */}
+      {!isFormValid && Object.keys(touched).length > 0 && (
+        <p className="text-xs text-slate-500 text-center mt-2">
+          모든 필드를 올바르게 입력하고 약관에 동의해주세요
+        </p>
+      )}
     </form>
   );
 }
