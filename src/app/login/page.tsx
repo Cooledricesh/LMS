@@ -6,6 +6,9 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { ROLE_REDIRECT_PATHS } from "@/features/onboarding/constants/roles";
+import { apiClient } from "@/lib/remote/api-client";
+import { ProfileResponseSchema } from "@/features/profiles/lib/dto";
 
 type LoginPageProps = {
   params: Promise<Record<string, never>>;
@@ -22,8 +25,27 @@ export default function LoginPage({ params }: LoginPageProps) {
 
   useEffect(() => {
     if (isAuthenticated) {
-      const redirectedFrom = searchParams.get("redirectedFrom") ?? "/";
-      router.replace(redirectedFrom);
+      const redirectedFrom = searchParams.get("redirectedFrom");
+      if (redirectedFrom) {
+        router.replace(redirectedFrom);
+        return;
+      }
+
+      // Fetch profile and redirect based on role
+      apiClient.get('/api/profiles/me')
+        .then(async (response) => {
+          if (response.ok) {
+            const profileData = await response.json();
+            const profile = ProfileResponseSchema.parse(profileData);
+            const redirectPath = ROLE_REDIRECT_PATHS[profile.role];
+            router.replace(redirectPath);
+          } else {
+            router.replace('/');
+          }
+        })
+        .catch(() => {
+          router.replace('/');
+        });
     }
   }, [isAuthenticated, router, searchParams]);
 
@@ -54,8 +76,30 @@ export default function LoginPage({ params }: LoginPageProps) {
 
         if (nextAction === "success") {
           await refresh();
-          const redirectedFrom = searchParams.get("redirectedFrom") ?? "/";
-          router.replace(redirectedFrom);
+
+          // If there's a specific redirect target, use it
+          const redirectedFrom = searchParams.get("redirectedFrom");
+          if (redirectedFrom) {
+            router.replace(redirectedFrom);
+            return;
+          }
+
+          // Otherwise, fetch user profile and redirect based on role
+          try {
+            const profileResponse = await apiClient.get('/api/profiles/me');
+            if (profileResponse.ok) {
+              const profileData = await profileResponse.json();
+              const profile = ProfileResponseSchema.parse(profileData);
+              const redirectPath = ROLE_REDIRECT_PATHS[profile.role];
+              router.replace(redirectPath);
+              return;
+            }
+          } catch (error) {
+            console.error('Failed to fetch profile for redirect:', error);
+          }
+
+          // Fallback to root if profile fetch fails
+          router.replace('/');
         } else {
           setErrorMessage(nextAction);
         }

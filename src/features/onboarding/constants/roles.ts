@@ -16,6 +16,6 @@ export const ROLE_DESCRIPTIONS = {
 } as const;
 
 export const ROLE_REDIRECT_PATHS = {
-  [USER_ROLES.LEARNER]: '/courses',
+  [USER_ROLES.LEARNER]: '/learner/courses',
   [USER_ROLES.INSTRUCTOR]: '/instructor/dashboard',
 } as const;

@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Copy, CheckCircle2, Boxes, Database, LogOut, Server } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { useUserProfile } from "@/features/profiles/hooks/useUserProfile";
+import { ROLE_REDIRECT_PATHS } from "@/features/onboarding/constants/roles";
 
 type SetupCommand = {
   id: string;
@@ -78,7 +80,16 @@ const backendBuildingBlocks = [
 export default function Home() {
   const [copiedCommand, setCopiedCommand] = useState<string | null>(null);
   const { user, isAuthenticated, isLoading, refresh } = useCurrentUser();
+  const { data: profile, isLoading: isProfileLoading } = useUserProfile();
   const router = useRouter();
+
+  // Auto-redirect authenticated users based on their role
+  useEffect(() => {
+    if (isAuthenticated && profile && !isProfileLoading) {
+      const redirectPath = ROLE_REDIRECT_PATHS[profile.role];
+      router.replace(redirectPath);
+    }
+  }, [isAuthenticated, profile, isProfileLoading, router]);
 
   const handleSignOut = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
@@ -95,15 +106,20 @@ export default function Home() {
     }
 
     if (isAuthenticated && user) {
+      const linkHref = profile ? ROLE_REDIRECT_PATHS[profile.role] : '/dashboard';
+      const linkText = profile?.role === 'learner' ? '코스 탐색' :
+                       profile?.role === 'instructor' ? '강사 대시보드' :
+                       '대시보드';
+
       return (
         <div className="flex items-center gap-3 text-sm text-slate-200">
           <span className="truncate">{user.email ?? "알 수 없는 사용자"}</span>
           <div className="flex items-center gap-2">
             <Link
-              href="/dashboard"
+              href={linkHref}
               className="rounded-md border border-slate-600 px-3 py-1 transition hover:border-slate-400 hover:bg-slate-800"
             >
-              대시보드
+              {linkText}
             </Link>
             <button
               type="button"
@@ -134,7 +150,7 @@ export default function Home() {
         </Link>
       </div>
     );
-  }, [handleSignOut, isAuthenticated, isLoading, user]);
+  }, [handleSignOut, isAuthenticated, isLoading, user, profile]);
 
   const handleCopy = (command: string) => {
     navigator.clipboard.writeText(command);
