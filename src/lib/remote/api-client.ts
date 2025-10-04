@@ -51,10 +51,24 @@ class FetchClient {
   ): Promise<Response> {
     const fullURL = this.baseURL ? `${this.baseURL}${url}` : url;
 
+    // Get Supabase auth token if available
+    let authHeaders = {};
+    if (typeof window !== 'undefined') {
+      const { getSupabaseBrowserClient } = await import('@/lib/supabase/browser-client');
+      const supabase = getSupabaseBrowserClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        authHeaders = {
+          'Authorization': `Bearer ${session.access_token}`
+        };
+      }
+    }
+
     const response = await fetch(fullURL, {
       ...options,
       headers: {
         "Content-Type": "application/json",
+        ...authHeaders,
         ...(options.headers || {}),
       },
     });

@@ -14,7 +14,7 @@ interface CourseFilterProps {
 }
 
 const categories = [
-  { value: '', label: '모든 카테고리' },
+  { value: 'all', label: '모든 카테고리' },
   { value: 'programming', label: '프로그래밍' },
   { value: 'design', label: '디자인' },
   { value: 'business', label: '비즈니스' },
@@ -24,7 +24,7 @@ const categories = [
 ];
 
 const difficulties = [
-  { value: '', label: '모든 난이도' },
+  { value: 'all', label: '모든 난이도' },
   { value: 'beginner', label: '초급' },
   { value: 'intermediate', label: '중급' },
   { value: 'advanced', label: '고급' },
@@ -38,30 +38,25 @@ const sortOptions = [
 
 export function CourseFilter({ filters, onFiltersChange }: CourseFilterProps) {
   const [searchTerm, setSearchTerm] = useState(filters.search || '');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
 
   useDebounce(
     () => {
-      setDebouncedSearchTerm(searchTerm);
+      if (searchTerm !== filters.search) {
+        onFiltersChange({
+          ...filters,
+          search: searchTerm || undefined,
+        });
+      }
     },
     500,
     [searchTerm]
   );
 
-  useEffect(() => {
-    if (debouncedSearchTerm !== filters.search) {
-      onFiltersChange({
-        ...filters,
-        search: debouncedSearchTerm || undefined,
-      });
-    }
-  }, [debouncedSearchTerm, filters, onFiltersChange]);
-
   const handleCategoryChange = useCallback(
     (value: string) => {
       onFiltersChange({
         ...filters,
-        category: value || undefined,
+        category: value === 'all' ? undefined : value,
       });
     },
     [filters, onFiltersChange]
@@ -71,7 +66,7 @@ export function CourseFilter({ filters, onFiltersChange }: CourseFilterProps) {
     (value: string) => {
       onFiltersChange({
         ...filters,
-        difficulty: value as CourseFilters['difficulty'],
+        difficulty: value === 'all' ? undefined : value as CourseFilters['difficulty'],
       });
     },
     [filters, onFiltersChange]
@@ -102,7 +97,7 @@ export function CourseFilter({ filters, onFiltersChange }: CourseFilterProps) {
 
       {/* Filters Row */}
       <div className="flex gap-4 flex-wrap items-center">
-        <Select value={filters.category || ''} onValueChange={handleCategoryChange}>
+        <Select value={filters.category || 'all'} onValueChange={handleCategoryChange}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="카테고리 선택" />
           </SelectTrigger>
@@ -115,7 +110,7 @@ export function CourseFilter({ filters, onFiltersChange }: CourseFilterProps) {
           </SelectContent>
         </Select>
 
-        <Select value={filters.difficulty || ''} onValueChange={handleDifficultyChange}>
+        <Select value={filters.difficulty || 'all'} onValueChange={handleDifficultyChange}>
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="난이도 선택" />
           </SelectTrigger>

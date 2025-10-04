@@ -87,6 +87,7 @@ export default function LoginPage({ params }: LoginPageProps) {
           // Otherwise, fetch user profile and redirect based on role
           try {
             const profileResponse = await apiClient.get('/api/profiles/me');
+
             if (profileResponse.ok) {
               const profileData = await profileResponse.json();
               const profile = ProfileResponseSchema.parse(profileData);

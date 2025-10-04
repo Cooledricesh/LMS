@@ -10,16 +10,33 @@ export const registerProfilesRoutes = (app: Hono<AppEnv>) => {
     const supabase = getSupabase(c);
     const logger = getLogger(c);
 
-    // Get current user from Supabase Auth
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Get auth token from Authorization header
+    const authHeader = c.req.header('Authorization');
 
-    if (authError || !user) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return respond(
         c,
         failure(
           401,
           profileErrorCodes.unauthorized,
-          'User not authenticated'
+          'Authorization token required'
+        )
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+
+    // Get current user from token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      logger.error('Auth error:', authError);
+      return respond(
+        c,
+        failure(
+          401,
+          profileErrorCodes.unauthorized,
+          'Invalid or expired token'
         )
       );
     }

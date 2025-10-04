@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { CourseList } from '@/features/courses/components/CourseList';
 import { CourseFilter } from '@/features/courses/components/CourseFilter';
@@ -11,6 +11,7 @@ import type { CourseListRequest } from '@/features/courses/lib/dto';
 export default function LearnerCoursesPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const isUpdatingFromURL = useRef(false);
 
   // Parse initial filters and pagination from URL
   const [filters, setFilters] = useState<CourseListRequest>(() => {
@@ -26,6 +27,10 @@ export default function LearnerCoursesPage() {
 
   // Update URL when filters change
   const updateURL = useCallback((newFilters: CourseListRequest) => {
+    if (isUpdatingFromURL.current) {
+      return; // Prevent updating URL when syncing from URL
+    }
+
     const params = new URLSearchParams();
 
     // Add pagination params
@@ -39,7 +44,7 @@ export default function LearnerCoursesPage() {
     if (newFilters.category) params.set('category', newFilters.category);
     if (newFilters.difficulty) params.set('difficulty', newFilters.difficulty);
 
-    router.push(`/learner/courses?${params.toString()}`);
+    router.push(`/learner/courses?${params.toString()}`, { scroll: false });
   }, [router]);
 
   // Handle filter changes
@@ -66,6 +71,7 @@ export default function LearnerCoursesPage() {
 
   // Sync with browser back/forward navigation
   useEffect(() => {
+    isUpdatingFromURL.current = true;
     const filterParams = parseCourseFilterParams(searchParams);
     const paginationParams = parsePaginationParams(searchParams);
 
@@ -74,6 +80,13 @@ export default function LearnerCoursesPage() {
       ...paginationParams,
       status: 'published' as const,
     });
+
+    // Reset the flag after a short delay
+    const timer = setTimeout(() => {
+      isUpdatingFromURL.current = false;
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [searchParams]);
 
   return (
