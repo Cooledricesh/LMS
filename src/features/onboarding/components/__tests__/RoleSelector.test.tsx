@@ -42,7 +42,7 @@ describe('RoleSelector Component', () => {
       <RoleSelector value={USER_ROLES.LEARNER} onChange={mockOnRoleChange} />
     )
 
-    let learnerRadio = screen.getByRole('radio', { name: /학습자/i })
+    const learnerRadio = screen.getByRole('radio', { name: /학습자/i })
     expect(learnerRadio).toBeChecked()
 
     rerender(
