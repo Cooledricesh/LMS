@@ -1,6 +1,7 @@
 import { apiClient } from '@/lib/remote/api-client';
 import type { SignupRequest, SignupResponse } from './dto';
 import type { TermsResponse } from '@/features/terms/lib/dto';
+import { ValidationException, type ApiErrorResponse } from './error';
 
 /**
  * 회원가입 API
@@ -11,8 +12,20 @@ export const signup = async (data: SignupRequest): Promise<SignupResponse> => {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || '회원가입에 실패했습니다');
+    const errorData: ApiErrorResponse = await response.json();
+    const error = errorData.error;
+
+    // Validation 에러인 경우 상세 정보 포함
+    if (error?.code === 'INVALID_INPUT') {
+      throw new ValidationException(
+        error.message || '입력 정보가 올바르지 않습니다',
+        error.code,
+        error.details
+      );
+    }
+
+    // 일반 에러
+    throw new Error(error?.message || '회원가입에 실패했습니다');
   }
 
   // respond 함수는 성공시 데이터를 바로 반환함

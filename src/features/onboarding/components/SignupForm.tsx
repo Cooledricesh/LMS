@@ -35,7 +35,19 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const { mutate: signup, isPending: isSigningUp } = useSignup();
+  const { mutate: signup, isPending: isSigningUp } = useSignup({
+    onValidationError: (serverErrors) => {
+      // 서버 측 validation 에러를 병합
+      setErrors(prev => ({ ...prev, ...serverErrors }));
+      // 에러가 있는 필드들을 touched 상태로 설정
+      const errorFields = Object.keys(serverErrors);
+      const touchedFields = errorFields.reduce(
+        (acc, field) => ({ ...acc, [field]: true }),
+        {}
+      );
+      setTouched(prev => ({ ...prev, ...touchedFields }));
+    },
+  });
   const { data: termsData, isLoading: isLoadingTerms } = useTerms();
 
   // 실시간 검증
@@ -49,6 +61,12 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
   const handleInputChange = useCallback(
     (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
       setFormData(prev => ({ ...prev, [field]: e.target.value }));
+    },
+    []
+  );
+
+  const handleInputBlur = useCallback(
+    (field: string) => () => {
       setTouched(prev => ({ ...prev, [field]: true }));
     },
     []
@@ -136,6 +154,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
             name="email"
             value={formData.email}
             onChange={handleInputChange('email')}
+            onBlur={handleInputBlur('email')}
             placeholder="example@email.com"
             autoComplete="email"
             className={`
@@ -167,6 +186,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
               name="password"
               value={formData.password}
               onChange={handleInputChange('password')}
+              onBlur={handleInputBlur('password')}
               placeholder="8자 이상, 영문/숫자/특수문자 포함"
               autoComplete="new-password"
               className={`
@@ -210,6 +230,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleInputChange('confirmPassword')}
+              onBlur={handleInputBlur('confirmPassword')}
               placeholder="비밀번호를 다시 입력해주세요"
               autoComplete="new-password"
               className={`
@@ -253,6 +274,8 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
         phoneNumber={formData.phoneNumber}
         onNameChange={handleProfileChange('name')}
         onPhoneNumberChange={handleProfileChange('phoneNumber')}
+        onNameBlur={handleInputBlur('name')}
+        onPhoneNumberBlur={handleInputBlur('phoneNumber')}
         errors={{
           name: errors.name && touched.name ? errors.name : undefined,
           phoneNumber: errors.phoneNumber && touched.phoneNumber ? errors.phoneNumber : undefined,

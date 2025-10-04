@@ -8,6 +8,8 @@ interface ProfileFormProps {
   phoneNumber: string;
   onNameChange: (name: string) => void;
   onPhoneNumberChange: (phoneNumber: string) => void;
+  onNameBlur?: () => void;
+  onPhoneNumberBlur?: () => void;
   errors?: {
     name?: string;
     phoneNumber?: string;
@@ -19,6 +21,8 @@ export const ProfileForm = memo(function ProfileForm({
   phoneNumber,
   onNameChange,
   onPhoneNumberChange,
+  onNameBlur,
+  onPhoneNumberBlur,
   errors = {},
 }: ProfileFormProps) {
   const handlePhoneNumberChange = useCallback(
@@ -44,6 +48,7 @@ export const ProfileForm = memo(function ProfileForm({
           name="name"
           value={name}
           onChange={(e) => onNameChange(e.target.value)}
+          onBlur={onNameBlur}
           placeholder="실명을 입력해주세요"
           className={`
             w-full rounded-md border px-3 py-2
@@ -74,6 +79,7 @@ export const ProfileForm = memo(function ProfileForm({
           name="phoneNumber"
           value={phoneNumber}
           onChange={handlePhoneNumberChange}
+          onBlur={onPhoneNumberBlur}
           placeholder="010-1234-5678"
           className={`
             w-full rounded-md border px-3 py-2

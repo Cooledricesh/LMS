@@ -1,4 +1,8 @@
+import { z } from 'zod';
 import { PASSWORD_RULES, PHONE_NUMBER_RULES, VALIDATION_MESSAGES } from '../constants/validation';
+
+// 백엔드와 동일한 Zod 이메일 검증 사용
+const emailSchema = z.string().email({ message: VALIDATION_MESSAGES.EMAIL_INVALID });
 
 /**
  * 이메일 형식 검증
@@ -8,13 +12,21 @@ export const validateEmail = (email: string): { valid: boolean; error?: string }
     return { valid: false, error: VALIDATION_MESSAGES.EMAIL_REQUIRED };
   }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
+  const result = emailSchema.safeParse(email);
+  if (!result.success) {
     return { valid: false, error: VALIDATION_MESSAGES.EMAIL_INVALID };
   }
 
   return { valid: true };
 };
+
+// 백엔드와 동일한 Zod 비밀번호 검증 사용
+const passwordSchema = z.string()
+  .min(8, { message: VALIDATION_MESSAGES.PASSWORD_TOO_SHORT })
+  .regex(
+    /^(?=.*[a-zA-Z])(?=.*[\d!@#$%^&*])/,
+    { message: VALIDATION_MESSAGES.PASSWORD_INVALID }
+  );
 
 /**
  * 비밀번호 형식 검증
@@ -24,12 +36,9 @@ export const validatePassword = (password: string): { valid: boolean; error?: st
     return { valid: false, error: VALIDATION_MESSAGES.PASSWORD_REQUIRED };
   }
 
-  if (password.length < PASSWORD_RULES.MIN_LENGTH) {
-    return { valid: false, error: VALIDATION_MESSAGES.PASSWORD_TOO_SHORT };
-  }
-
-  if (!PASSWORD_RULES.PATTERN.test(password)) {
-    return { valid: false, error: VALIDATION_MESSAGES.PASSWORD_INVALID };
+  const result = passwordSchema.safeParse(password);
+  if (!result.success) {
+    return { valid: false, error: result.error.errors[0]?.message || VALIDATION_MESSAGES.PASSWORD_INVALID };
   }
 
   return { valid: true };
@@ -68,6 +77,11 @@ export const validateName = (name: string): { valid: boolean; error?: string } =
   return { valid: true };
 };
 
+// 백엔드와 동일한 Zod 휴대폰번호 검증 사용
+const phoneNumberSchema = z.string()
+  .regex(/^(010|011|016|017|018|019)-?\d{3,4}-?\d{4}$/,
+    { message: VALIDATION_MESSAGES.PHONE_INVALID });
+
 /**
  * 휴대폰번호 형식 검증
  */
@@ -76,10 +90,8 @@ export const validatePhoneNumber = (phoneNumber: string): { valid: boolean; erro
     return { valid: false, error: VALIDATION_MESSAGES.PHONE_REQUIRED };
   }
 
-  // 하이픈 제거 후 검증
-  const cleanedNumber = phoneNumber.replace(/-/g, '');
-
-  if (!PHONE_NUMBER_RULES.PATTERN.test(phoneNumber) && !PHONE_NUMBER_RULES.PATTERN.test(cleanedNumber)) {
+  const result = phoneNumberSchema.safeParse(phoneNumber);
+  if (!result.success) {
     return { valid: false, error: VALIDATION_MESSAGES.PHONE_INVALID };
   }
 

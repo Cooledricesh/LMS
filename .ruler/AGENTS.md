@@ -6,6 +6,9 @@
 - always use promise for page.tsx params props.
 - use valid picsum.photos stock image for placeholder image
 - route feature hooks' HTTP requests through `@/lib/remote/api-client`.
+- preserve server validation error details (don't lose field-specific errors)
+- use same Zod schema for both frontend and backend validation
+- map server errors to specific form fields
 - **always verify all checks pass before reporting completion**: `npx tsc --noEmit` (type check) → `npm run lint` (lint check) → `npm run build` (build check). Never report success if any check fails.
 
 ## Library
@@ -60,7 +63,7 @@ use following libraries for specific functionalities:
   4. `registerExampleRoutes(app)` 등 기능별 라우터 등록 (모든 라우터는 `src/features/[feature]/backend/route.ts` 에서 정의).
 - `src/backend/hono/context.ts` 의 `AppEnv` 는 `c.get`/`c.var` 로 접근 가능한 `supabase`, `logger`, `config` 키를 제공한다. 절대 `c.env` 를 직접 수정하지 않는다.
 - 공통 HTTP 응답 헬퍼는 `src/backend/http/response.ts`에서 제공하며, 모든 라우터/서비스는 `success`/`failure`/`respond` 패턴을 사용한다.
-  - **중요**: `respond` 함수는 성공시 데이터를 직접 반환 (`result.data`), 실패시 error 객체로 감싸서 반환 (`{ error: ... }`)
+  - `respond` 함수는 성공시 데이터를 직접 반환 (`result.data`), 실패시 error 객체로 감싸서 반환 (`{ error: ... }`)
   - **Frontend API 호출**: `await response.json()`의 결과를 직접 사용 (❌ `result.data` ✅ `result`)
 - 기능별 백엔드 로직은 `src/features/[feature]/backend/service.ts`(Supabase 접근), `schema.ts`(요청/응답 zod 정의), `route.ts`(Hono 라우터)로 분리한다.
 - 프런트엔드가 동일 스키마를 사용할 경우 `src/features/[feature]/lib/dto.ts`에서 backend/schema를 재노출해 React Query 훅 등에서 재사용한다.
