@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { SignupForm } from "@/features/onboarding/components/SignupForm";
-import { ROLE_REDIRECT_PATHS } from "@/features/onboarding/constants/roles";
 import type { UserRole } from "@/features/onboarding/constants/roles";
 
 type SignupPageProps = {
@@ -27,10 +26,8 @@ export default function SignupPage({ params }: SignupPageProps) {
   }, [isAuthenticated, router, searchParams]);
 
   const handleSignupSuccess = (data: { role: UserRole; email: string }) => {
-    // 역할에 따른 리다이렉트 처리는 useSignup hook에서 처리
+    // 이메일 확인 안내는 useSignup hook에서 처리
     // 추가적인 처리가 필요한 경우 여기에 구현
-    const redirectPath = searchParams.get("redirectedFrom") || ROLE_REDIRECT_PATHS[data.role];
-    router.push(redirectPath);
   };
 
   if (isAuthenticated) {
