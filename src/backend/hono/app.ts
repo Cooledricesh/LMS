@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { errorBoundary } from '@/backend/middleware/error';
 import { withAppContext } from '@/backend/middleware/context';
 import { withSupabase } from '@/backend/middleware/supabase';
+import { optionalAuth } from '@/backend/middleware/auth';
 import { registerExampleRoutes } from '@/features/example/backend/route';
 import { registerOnboardingRoutes } from '@/features/onboarding/backend/route';
 import { registerTermsRoutes } from '@/features/terms/backend/route';
@@ -25,6 +26,7 @@ export const createHonoApp = () => {
   app.use('*', errorBoundary());
   app.use('*', withAppContext());
   app.use('*', withSupabase());
+  app.use('*', optionalAuth());
 
   registerExampleRoutes(app);
   registerOnboardingRoutes(app);

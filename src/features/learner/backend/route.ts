@@ -3,6 +3,7 @@ import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import type { AppEnv } from '@/backend/hono/context';
 import { respond, success, failure } from '@/backend/http/response';
+import { getAuthUser } from '@/backend/middleware/auth';
 import { LearnerService } from './service';
 import { enrolledCoursesResponseSchema } from './schema';
 
@@ -14,9 +15,9 @@ export const learnerRoutes = new Hono<AppEnv>()
 
     try {
       // 현재 로그인한 사용자 확인
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      const user = getAuthUser(c);
 
-      if (authError || !user) {
+      if (!user) {
         return respond(c, failure(401, 'UNAUTHORIZED', 'Authentication required'));
       }
 
@@ -53,9 +54,9 @@ export const learnerRoutes = new Hono<AppEnv>()
     const courseId = c.req.param('courseId');
 
     try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      const user = getAuthUser(c);
 
-      if (authError || !user) {
+      if (!user) {
         return respond(c, failure(401, 'UNAUTHORIZED', 'Authentication required'));
       }
 
@@ -83,9 +84,9 @@ export const learnerRoutes = new Hono<AppEnv>()
       const { courseId } = c.req.valid('json');
 
       try {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        const user = getAuthUser(c);
 
-        if (authError || !user) {
+        if (!user) {
           return respond(c, failure(401, 'UNAUTHORIZED', 'Authentication required'));
         }
 
@@ -118,9 +119,9 @@ export const learnerRoutes = new Hono<AppEnv>()
       const { progress } = c.req.valid('json');
 
       try {
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        const user = getAuthUser(c);
 
-        if (authError || !user) {
+        if (!user) {
           return respond(c, failure(401, 'UNAUTHORIZED', 'Authentication required'));
         }
 

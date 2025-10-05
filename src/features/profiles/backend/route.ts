@@ -1,6 +1,7 @@
 import type { Hono } from 'hono';
 import { failure, respond } from '@/backend/http/response';
 import { getLogger, getSupabase, type AppEnv } from '@/backend/hono/context';
+import { getAuthUser } from '@/backend/middleware/auth';
 import { getProfileById } from '@/features/profiles/backend/service';
 import { profileErrorCodes } from '@/features/profiles/backend/error';
 
@@ -10,33 +11,16 @@ export const registerProfilesRoutes = (app: Hono<AppEnv>) => {
     const supabase = getSupabase(c);
     const logger = getLogger(c);
 
-    // Get auth token from Authorization header
-    const authHeader = c.req.header('Authorization');
+    // Get current user from auth middleware
+    const user = getAuthUser(c);
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!user) {
       return respond(
         c,
         failure(
           401,
           profileErrorCodes.unauthorized,
           'Authorization token required'
-        )
-      );
-    }
-
-    const token = authHeader.replace('Bearer ', '');
-
-    // Get current user from token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-    if (authError || !user) {
-      logger.error('Auth error:', authError);
-      return respond(
-        c,
-        failure(
-          401,
-          profileErrorCodes.unauthorized,
-          'Invalid or expired token'
         )
       );
     }
