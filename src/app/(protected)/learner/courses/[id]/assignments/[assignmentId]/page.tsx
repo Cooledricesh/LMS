@@ -4,8 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AssignmentDetail } from '@/features/assignments/components/AssignmentDetail';
 import { useAssignmentDetail } from '@/features/assignments/hooks/useAssignmentDetail';
+import { useSubmitAssignment } from '@/features/submissions/hooks/useSubmitAssignment';
 import { getSupabaseBrowserClient } from '@/lib/supabase/browser-client';
-import { apiClient } from '@/lib/remote/api-client';
 import { toast } from '@/hooks/use-toast';
 
 interface PageProps {
@@ -42,30 +42,22 @@ export default function AssignmentDetailPage({ params }: PageProps) {
     userId
   );
 
+  const { mutateAsync: submitAssignment } = useSubmitAssignment();
+
   const handleSubmit = async (values: { content: string; link?: string }) => {
     if (!resolvedParams?.assignmentId) return;
 
     try {
-      const response = await apiClient.post(`/api/submissions`, {
-        json: {
-          assignmentId: resolvedParams.assignmentId,
-          content: values.content,
-          link: values.link || null,
-        },
+      await submitAssignment({
+        assignmentId: resolvedParams.assignmentId,
+        content: values.content,
+        link: values.link || null,
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error?.message || 'Failed to submit assignment');
-      }
 
       toast({
         title: '제출 완료',
         description: '과제가 성공적으로 제출되었습니다.',
       });
-
-      // Refresh the page to show updated submission status
-      router.refresh();
     } catch (error) {
       console.error('Failed to submit assignment:', error);
       toast({
