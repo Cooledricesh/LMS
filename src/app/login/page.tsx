@@ -22,8 +22,21 @@ export default function LoginPage({ params }: LoginPageProps) {
   const [formState, setFormState] = useState({ email: "", password: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    // 이메일 확인 완료 메시지 표시
+    const confirmed = searchParams.get("confirmed");
+    if (confirmed === "true") {
+      setSuccessMessage("이메일 확인이 완료되었습니다. 로그인해주세요.");
+    }
+
+    // 콜백 에러 메시지 표시
+    const error = searchParams.get("error");
+    if (error === "auth_callback_error") {
+      setErrorMessage("이메일 확인 중 오류가 발생했습니다. 다시 시도해주세요.");
+    }
+
     if (isAuthenticated) {
       const redirectedFrom = searchParams.get("redirectedFrom");
       if (redirectedFrom) {
@@ -154,6 +167,9 @@ export default function LoginPage({ params }: LoginPageProps) {
               className="rounded-md border border-slate-300 px-3 py-2 focus:border-slate-500 focus:outline-none"
             />
           </label>
+          {successMessage ? (
+            <p className="text-sm text-green-600 bg-green-50 border border-green-200 rounded-md p-3">{successMessage}</p>
+          ) : null}
           {errorMessage ? (
             <p className="text-sm text-rose-500">{errorMessage}</p>
           ) : null}

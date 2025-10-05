@@ -52,6 +52,7 @@ export const createUserProfile = async (
 
   try {
     // 1. Supabase Auth로 계정 생성
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
     const { data: authData, error: authError } = await client.auth.signUp({
       email,
       password,
@@ -59,7 +60,8 @@ export const createUserProfile = async (
         data: {
           role,
           name,
-        }
+        },
+        emailRedirectTo: `${siteUrl}/auth/callback`
       }
     });
 
