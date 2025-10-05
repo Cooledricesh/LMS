@@ -19,10 +19,7 @@ export const SignupRequestSchema = z.object({
   termsAgreed: z.object({
     service: z.boolean(),
     privacy: z.boolean(),
-  }).refine(
-    (terms) => terms.service && terms.privacy,
-    { message: '필수 약관에 모두 동의해야 합니다.' }
-  ),
+  }),
 });
 
 export type SignupRequest = z.infer<typeof SignupRequestSchema>;
