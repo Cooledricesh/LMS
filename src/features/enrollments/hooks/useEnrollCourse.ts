@@ -35,6 +35,8 @@ export const useEnrollCourse = () => {
       queryClient.invalidateQueries({ queryKey: ['course', variables.courseId] });
       queryClient.invalidateQueries({ queryKey: ['enrollment-status'] });
       queryClient.invalidateQueries({ queryKey: ['courses'] });
+      // 대시보드에서 사용하는 쿼리 키도 무효화
+      queryClient.invalidateQueries({ queryKey: ['enrolledCourses'] });
 
       toast({
         title: '수강신청 완료',

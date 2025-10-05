@@ -33,12 +33,15 @@ export const getCourseList = async (
   pagination: PaginationRequest
 ): Promise<HandlerResult<PaginationResponse<CourseResponse>, CourseServiceError, unknown>> => {
   try {
+    console.log('getCourseList called with:', { filters, pagination });
+
     // Build base query for published courses
+    // Left join으로 변경하여 instructor가 없어도 과목을 가져옴
     let query = client
       .from(COURSES_TABLE)
       .select(`
         *,
-        instructor:profiles!courses_instructor_id_fkey(id, name, role),
+        instructor:profiles!left(id, name, role),
         enrollments(count)
       `, { count: 'exact' })
       .eq('status', 'published');
@@ -56,11 +59,20 @@ export const getCourseList = async (
 
     const { data, error, count } = await query;
 
+    console.log('Supabase query result:', {
+      dataLength: data?.length,
+      count,
+      error,
+      firstItem: data?.[0]
+    });
+
     if (error) {
+      console.error('Supabase error:', error);
       return failure(500, courseErrorCodes.fetchError, error.message);
     }
 
     if (!data) {
+      console.log('No data returned from query');
       return success(createPaginationResponse([], 0, pagination.page, pagination.limit));
     }
 
@@ -75,11 +87,15 @@ export const getCourseList = async (
         continue;
       }
 
-      const instructorRow = ProfileTableRowSchema.safeParse(row.instructor);
-
-      if (!instructorRow.success) {
-        console.error('Instructor validation failed:', instructorRow.error);
-        continue;
+      // instructor가 null인 경우도 처리
+      let instructorName = 'Unknown Instructor';
+      if (row.instructor) {
+        const instructorRow = ProfileTableRowSchema.safeParse(row.instructor);
+        if (instructorRow.success) {
+          instructorName = instructorRow.data.name;
+        } else {
+          console.error('Instructor validation failed:', instructorRow.error);
+        }
       }
 
       // Get enrollment count
@@ -88,9 +104,10 @@ export const getCourseList = async (
       const course: CourseResponse = {
         id: courseRow.data.id,
         instructorId: courseRow.data.instructor_id,
-        instructorName: instructorRow.data.name,
+        instructorName: instructorName,
         title: courseRow.data.title,
         description: courseRow.data.description,
+        thumbnail: courseRow.data.thumbnail,
         category: courseRow.data.category,
         difficulty: courseRow.data.difficulty,
         status: courseRow.data.status,
@@ -126,11 +143,12 @@ export const getCourseById = async (
 ): Promise<HandlerResult<CourseDetailResponse, CourseServiceError, unknown>> => {
   try {
     // Fetch course with instructor info
+    // Left join으로 변경하여 instructor가 없어도 과목을 가져옴
     const { data: courseData, error: courseError } = await client
       .from(COURSES_TABLE)
       .select(`
         *,
-        instructor:profiles!courses_instructor_id_fkey(id, name, role),
+        instructor:profiles!left(id, name, role),
         assignments(count),
         enrollments(count)
       `)
@@ -148,10 +166,15 @@ export const getCourseById = async (
       return failure(500, courseErrorCodes.fetchError, 'Course data validation failed');
     }
 
-    const instructorRow = ProfileTableRowSchema.safeParse(courseData.instructor);
-
-    if (!instructorRow.success) {
-      return failure(500, courseErrorCodes.fetchError, 'Instructor data validation failed');
+    // instructor가 null인 경우도 처리
+    let instructorName = 'Unknown Instructor';
+    if (courseData.instructor) {
+      const instructorRow = ProfileTableRowSchema.safeParse(courseData.instructor);
+      if (instructorRow.success) {
+        instructorName = instructorRow.data.name;
+      } else {
+        console.error('Instructor validation failed:', instructorRow.error);
+      }
     }
 
     // Check enrollment status if userId provided
@@ -178,9 +201,10 @@ export const getCourseById = async (
     const courseDetail: CourseDetailResponse = {
       id: courseRow.data.id,
       instructorId: courseRow.data.instructor_id,
-      instructorName: instructorRow.data.name,
+      instructorName: instructorName,
       title: courseRow.data.title,
       description: courseRow.data.description,
+      thumbnail: courseRow.data.thumbnail,
       category: courseRow.data.category,
       difficulty: courseRow.data.difficulty,
       status: courseRow.data.status,

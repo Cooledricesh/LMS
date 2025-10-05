@@ -2,6 +2,7 @@
 
 import { useCourseDetail } from '@/features/courses/hooks/useCourseDetail';
 import { EnrollmentButton } from '@/features/enrollments/components/EnrollmentButton';
+import { AssignmentsList } from '@/features/assignments/components/AssignmentsList';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -9,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, BookOpen, Users, User, Clock, FileText, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import Image from 'next/image';
 
 interface CourseDetailProps {
   courseId: string;
@@ -64,6 +66,19 @@ export function CourseDetail({ courseId, userId }: CourseDetailProps) {
 
   return (
     <div className="space-y-6">
+      {/* Thumbnail Image */}
+      {(course.thumbnail || true) && (
+        <div className="relative w-full h-64 md:h-80 rounded-lg overflow-hidden">
+          <Image
+            src={course.thumbnail || `https://picsum.photos/seed/${course.id}/1200/400`}
+            alt={course.title}
+            width={1200}
+            height={400}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+
       {/* Header */}
       <Card>
         <CardHeader>
@@ -161,6 +176,13 @@ export function CourseDetail({ courseId, userId }: CourseDetailProps) {
           </AlertDescription>
         </Alert>
       )}
+
+      {/* Assignments List - 수강 여부에 따라 다르게 표시 */}
+      <AssignmentsList
+        courseId={courseId}
+        userId={userId}
+        isEnrolled={course.isEnrolled}
+      />
     </div>
   );
 }

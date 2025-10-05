@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { respond } from '@/backend/http/response';
 import { getAssignmentDetail, getAssignmentsByCourse } from '@/features/assignments/backend/service';
+import { getCourseAssignmentsList } from '@/features/assignments/backend/service-list';
 import type { AppEnv } from '@/backend/hono/context';
 
 const assignmentRoutes = new Hono<AppEnv>();
@@ -69,7 +70,7 @@ assignmentRoutes.get('/course/:courseId', async (c) => {
   }
 
   const supabase = c.get('supabase');
-  const result = await getAssignmentsByCourse(supabase, courseId, userId);
+  const result = await getCourseAssignmentsList(supabase, courseId, userId);
 
   return respond(c, result);
 });

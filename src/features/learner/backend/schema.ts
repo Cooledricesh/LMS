@@ -23,7 +23,6 @@ export const enrolledCourseSchema = enrollmentSchema.extend({
     instructor: z.object({
       id: z.string().uuid(),
       name: z.string(),
-      email: z.string().email(),
     }),
   }),
 });

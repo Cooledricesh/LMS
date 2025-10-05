@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Users, BookOpen, User } from 'lucide-react';
 import type { CourseResponse } from '@/features/courses/lib/dto';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface CourseCardProps {
   course: CourseResponse;
@@ -25,7 +26,18 @@ const difficultyLabels = {
 
 export function CourseCard({ course, href }: CourseCardProps) {
   const cardContent = (
-    <Card className="h-full hover:shadow-lg transition-shadow duration-200">
+    <Card className="h-full hover:shadow-lg transition-shadow duration-200 overflow-hidden">
+      {/* 썸네일 이미지 */}
+      <div className="relative h-48 w-full">
+        <Image
+          src={course.thumbnail || `https://picsum.photos/seed/${course.id}/400/200`}
+          alt={course.title}
+          width={400}
+          height={200}
+          className="w-full h-full object-cover"
+        />
+      </div>
+
       <CardHeader>
         <div className="flex justify-between items-start mb-2">
           <CardTitle className="text-lg line-clamp-2">{course.title}</CardTitle>

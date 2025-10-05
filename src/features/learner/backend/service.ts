@@ -44,7 +44,7 @@ export class LearnerService {
     const instructorIds = [...new Set(courses.map(c => c.instructor_id))];
     const { data: instructors, error: instructorsError } = await this.supabase
       .from('profiles')
-      .select('id, name, email')
+      .select('id, name')
       .in('id', instructorIds);
 
     // enrollments와 courses, instructors 매핑
@@ -75,11 +75,9 @@ export class LearnerService {
           instructor: instructor ? {
             id: instructor.id,
             name: instructor.name,
-            email: instructor.email,
           } : {
             id: course.instructor_id,
             name: 'Unknown Instructor',
-            email: 'unknown@example.com',
           },
         },
       };
