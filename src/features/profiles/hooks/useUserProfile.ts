@@ -18,16 +18,22 @@ const fetchUserProfile = async () => {
 
   try {
     const response = await apiClient.get('/api/profiles/me');
+    console.log('=== useUserProfile: API Response Status ===', response.status);
 
     if (!response.ok) {
       const error = await response.json();
+      console.error('=== useUserProfile: API Error ===', error);
       throw new Error(error.error?.message || 'Failed to fetch profile');
     }
 
     const result = await response.json();
-    return ProfileResponseSchema.parse(result);
+    console.log('=== useUserProfile: API Response Data ===', result);
+    const parsed = ProfileResponseSchema.parse(result);
+    console.log('=== useUserProfile: Parsed Profile ===', parsed);
+    console.log('=== useUserProfile: Profile Role ===', parsed.role);
+    return parsed;
   } catch (error) {
-    console.error('Failed to fetch user profile:', error);
+    console.error('=== useUserProfile: Error ===', error);
     throw error;
   }
 };

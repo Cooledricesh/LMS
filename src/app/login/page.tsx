@@ -100,16 +100,25 @@ export default function LoginPage({ params }: LoginPageProps) {
           // Otherwise, fetch user profile and redirect based on role
           try {
             const profileResponse = await apiClient.get('/api/profiles/me');
+            console.log('=== LOGIN: Profile API Response Status ===', profileResponse.status);
 
             if (profileResponse.ok) {
               const profileData = await profileResponse.json();
+              console.log('=== LOGIN: Profile API Response Data ===', profileData);
               const profile = ProfileResponseSchema.parse(profileData);
+              console.log('=== LOGIN: Parsed Profile ===', profile);
+              console.log('=== LOGIN: Profile Role ===', profile.role);
               const redirectPath = ROLE_REDIRECT_PATHS[profile.role];
+              console.log('=== LOGIN: Redirect Path ===', redirectPath);
               router.replace(redirectPath);
               return;
+            } else {
+              console.error('=== LOGIN: Profile API failed ===', profileResponse.status);
+              const errorText = await profileResponse.text();
+              console.error('=== LOGIN: Error response ===', errorText);
             }
           } catch (error) {
-            console.error('Failed to fetch profile for redirect:', error);
+            console.error('=== LOGIN: Failed to fetch profile for redirect ===', error);
           }
 
           // Fallback to root if profile fetch fails

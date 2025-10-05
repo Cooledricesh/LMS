@@ -130,20 +130,15 @@ export default function InstructorDashboardPage(props: {
               <Button
                 variant="outline"
                 className="h-24 flex flex-col gap-2"
-                onClick={() => router.push('/learner/courses')}
+                onClick={() => router.push('/instructor/courses')}
               >
                 <BookOpen className="h-6 w-6" />
-                <span className="text-sm">코스 탐색</span>
+                <span className="text-sm">내 코스</span>
               </Button>
               <Button
                 variant="outline"
                 className="h-24 flex flex-col gap-2"
-                onClick={() => {
-                  if (stats?.courses && stats.courses.length > 0) {
-                    router.push(`/instructor/courses/${stats.courses[0].id}/assignments`);
-                  }
-                }}
-                disabled={!stats?.courses || stats.courses.length === 0}
+                onClick={() => router.push('/instructor/courses')}
               >
                 <FileText className="h-6 w-6" />
                 <span className="text-sm">과제 관리</span>
@@ -183,13 +178,6 @@ export default function InstructorDashboardPage(props: {
                 <div className="text-center py-12 text-gray-500">
                   <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                   <p>아직 개설한 코스가 없습니다</p>
-                  <Button
-                    className="mt-4"
-                    variant="outline"
-                    onClick={() => router.push('/learner/courses')}
-                  >
-                    코스 탐색하기
-                  </Button>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -216,7 +204,7 @@ export default function InstructorDashboardPage(props: {
                     <Button
                       variant="link"
                       className="w-full"
-                      onClick={() => router.push('/learner/courses')}
+                      onClick={() => router.push('/instructor/courses')}
                     >
                       모든 코스 보기
                     </Button>
@@ -260,11 +248,7 @@ export default function InstructorDashboardPage(props: {
                     <Button
                       variant="link"
                       className="w-full"
-                      onClick={() => {
-                        if (stats?.courses && stats.courses.length > 0) {
-                          router.push(`/instructor/courses/${stats.courses[0].id}/assignments`);
-                        }
-                      }}
+                      onClick={() => router.push('/instructor/courses')}
                     >
                       모든 제출물 보기
                     </Button>
