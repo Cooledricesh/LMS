@@ -31,11 +31,17 @@ export const createSupabaseServerClient = async (): Promise<
           return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            if (typeof cookieStore.set === "function") {
-              cookieStore.set({ name, value, ...options });
-            }
-          });
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              if (typeof cookieStore.set === "function") {
+                cookieStore.set({ name, value, ...options });
+              }
+            });
+          } catch (error) {
+            // Next.js 15: Server Components에서는 쿠키를 수정할 수 없음
+            // Server Actions나 Route Handlers에서만 쿠키 수정 가능
+            // 읽기 전용 컨텍스트에서는 에러를 무시
+          }
         },
       },
     }
