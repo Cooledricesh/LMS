@@ -10,9 +10,10 @@ import { AlertCircle } from 'lucide-react';
 
 interface CourseListProps {
   filters: CourseListRequest;
+  onPageChange?: (page: number) => void;
 }
 
-export function CourseList({ filters }: CourseListProps) {
+export function CourseList({ filters, onPageChange }: CourseListProps) {
   const { data, isLoading, error } = useCourseList(filters);
 
   const courses = useMemo(() => data?.items || [], [data]);
@@ -66,6 +67,29 @@ export function CourseList({ filters }: CourseListProps) {
           />
         ))}
       </div>
+
+      {/* Pagination Controls */}
+      {onPageChange && data && (
+        <div className="mt-8 flex justify-center gap-2">
+          <button
+            onClick={() => onPageChange(filters.page - 1)}
+            disabled={!data.hasPrev}
+            className="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            이전
+          </button>
+          <span className="px-4 py-2">
+            페이지 {data.page} / {data.totalPages}
+          </span>
+          <button
+            onClick={() => onPageChange(filters.page + 1)}
+            disabled={!data.hasNext}
+            className="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            다음
+          </button>
+        </div>
+      )}
     </>
   );
 }

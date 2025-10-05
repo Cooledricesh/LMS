@@ -105,29 +105,10 @@ export default function LearnerCoursesPage() {
         />
       </div>
 
-      <CourseList filters={filters} />
-
-      {/* Pagination Controls */}
-      {filters.page && (
-        <div className="mt-8 flex justify-center gap-2">
-          <button
-            onClick={() => handlePageChange(filters.page - 1)}
-            disabled={filters.page <= 1}
-            className="px-4 py-2 border rounded disabled:opacity-50"
-          >
-            이전
-          </button>
-          <span className="px-4 py-2">
-            페이지 {filters.page}
-          </span>
-          <button
-            onClick={() => handlePageChange(filters.page + 1)}
-            className="px-4 py-2 border rounded"
-          >
-            다음
-          </button>
-        </div>
-      )}
+      <CourseList
+        filters={filters}
+        onPageChange={handlePageChange}
+      />
     </div>
   );
 }

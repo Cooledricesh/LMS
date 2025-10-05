@@ -3,7 +3,7 @@ import { onboardingErrorCodes } from '../error'
 import type { SignupRequest } from '../schema'
 
 // Mock Supabase client
-const mockSupabase = {
+const mockSupabase: any = {
   auth: {
     signUp: jest.fn(),
     admin: {
@@ -43,8 +43,8 @@ describe('createUserProfile', () => {
 
       const result = await createUserProfile(mockSupabase as any, request)
 
-      expect(result.success).toBe(false)
-      if (!result.success) {
+      expect(result.ok).toBe(false)
+      if (!result.ok && 'error' in result) {
         expect(result.error.code).toBe(onboardingErrorCodes.termsNotAgreed)
       }
     })
@@ -74,14 +74,24 @@ describe('createUserProfile', () => {
               error: null
             }))
           }))
+        })),
+        delete: jest.fn(() => ({
+          eq: jest.fn()
         }))
       })
 
       // Mock: 약관 동의 저장 성공
       mockSupabase.from.mockReturnValueOnce({
-        insert: jest.fn(() => Promise.resolve({
-          data: null,
-          error: null
+        insert: jest.fn(() => ({
+          select: jest.fn(() => ({
+            single: jest.fn(() => Promise.resolve({
+              data: null,
+              error: null
+            }))
+          }))
+        })),
+        delete: jest.fn(() => ({
+          eq: jest.fn()
         }))
       })
 
@@ -99,8 +109,8 @@ describe('createUserProfile', () => {
 
       const result = await createUserProfile(mockSupabase as any, request)
 
-      expect(result.success).toBe(true)
-      if (result.success) {
+      expect(result.ok).toBe(true)
+      if (result.ok) {
         expect(result.data.userId).toBe('new-user-id')
         expect(result.data.role).toBe('learner')
       }
@@ -133,8 +143,8 @@ describe('createUserProfile', () => {
 
       const result = await createUserProfile(mockSupabase as any, request)
 
-      expect(result.success).toBe(false)
-      if (!result.success) {
+      expect(result.ok).toBe(false)
+      if (!result.ok && 'error' in result) {
         expect(result.error.code).toBe(onboardingErrorCodes.emailAlreadyExists)
       }
     })
@@ -168,14 +178,24 @@ describe('createUserProfile', () => {
               error: null
             }))
           }))
+        })),
+        delete: jest.fn(() => ({
+          eq: jest.fn()
         }))
       })
 
       // Mock: 약관 동의 저장 성공
       mockSupabase.from.mockReturnValueOnce({
-        insert: jest.fn(() => Promise.resolve({
-          data: null,
-          error: null
+        insert: jest.fn(() => ({
+          select: jest.fn(() => ({
+            single: jest.fn(() => Promise.resolve({
+              data: null,
+              error: null
+            }))
+          }))
+        })),
+        delete: jest.fn(() => ({
+          eq: jest.fn()
         }))
       })
 
@@ -193,7 +213,7 @@ describe('createUserProfile', () => {
 
       const result = await createUserProfile(mockSupabase as any, request)
 
-      expect(result.success).toBe(true)
+      expect(result.ok).toBe(true)
     })
 
     test('프로필 생성 실패 시 Auth 유저 삭제', async () => {
@@ -206,6 +226,9 @@ describe('createUserProfile', () => {
               error: { message: 'Profile creation failed' }
             }))
           }))
+        })),
+        delete: jest.fn(() => ({
+          eq: jest.fn()
         }))
       })
 
@@ -223,8 +246,8 @@ describe('createUserProfile', () => {
 
       const result = await createUserProfile(mockSupabase as any, request)
 
-      expect(result.success).toBe(false)
-      if (!result.success) {
+      expect(result.ok).toBe(false)
+      if (!result.ok && 'error' in result) {
         expect(result.error.code).toBe(onboardingErrorCodes.profileCreationFailed)
       }
       // Auth 유저 삭제가 호출되었는지 확인
@@ -248,8 +271,8 @@ describe('createUserProfile', () => {
 
       const result = await createUserProfile(mockSupabase as any, request)
 
-      expect(result.success).toBe(false)
-      if (!result.success) {
+      expect(result.ok).toBe(false)
+      if (!result.ok && 'error' in result) {
         expect(result.error.code).toBe(onboardingErrorCodes.invalidInput)
       }
     })
@@ -283,13 +306,23 @@ describe('createUserProfile', () => {
                 error: null
               }))
             }))
+          })),
+          delete: jest.fn(() => ({
+            eq: jest.fn()
           }))
         })
 
         mockSupabase.from.mockReturnValueOnce({
-          insert: jest.fn(() => Promise.resolve({
-            data: null,
-            error: null
+          insert: jest.fn(() => ({
+            select: jest.fn(() => ({
+              single: jest.fn(() => Promise.resolve({
+                data: null,
+                error: null
+              }))
+            }))
+          })),
+          delete: jest.fn(() => ({
+            eq: jest.fn()
           }))
         })
 
@@ -307,8 +340,8 @@ describe('createUserProfile', () => {
 
         const result = await createUserProfile(mockSupabase as any, request)
 
-        expect(result.success).toBe(true)
-        if (result.success) {
+        expect(result.ok).toBe(true)
+        if (result.ok) {
           expect(result.data.role).toBe(role)
         }
       }
@@ -341,17 +374,27 @@ describe('createUserProfile', () => {
               error: null
             }))
           }))
+        })),
+        delete: jest.fn(() => ({
+          eq: jest.fn()
         }))
       })
 
       // 약관 동의 저장 Mock
-      const insertMock = jest.fn(() => Promise.resolve({
-        data: null,
-        error: null
+      const insertMock = jest.fn((data: any) => ({
+        select: jest.fn(() => ({
+          single: jest.fn(() => Promise.resolve({
+            data: null,
+            error: null
+          }))
+        }))
       }))
 
       mockSupabase.from.mockReturnValueOnce({
-        insert: insertMock
+        insert: insertMock,
+        delete: jest.fn(() => ({
+          eq: jest.fn()
+        }))
       })
 
       const request: SignupRequest = {
@@ -362,14 +405,13 @@ describe('createUserProfile', () => {
         phoneNumber: '010-1234-5678',
         termsAgreed: {
           service: true,
-          privacy: true,
-          marketing: true
+          privacy: true
         }
       }
 
       const result = await createUserProfile(mockSupabase as any, request)
 
-      expect(result.success).toBe(true)
+      expect(result.ok).toBe(true)
 
       // 약관 동의 저장이 호출되었는지 확인
       expect(mockSupabase.from).toHaveBeenCalledWith('terms_agreements')
