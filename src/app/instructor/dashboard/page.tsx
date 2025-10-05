@@ -126,7 +126,7 @@ export default function InstructorDashboardPage(props: {
             <CardTitle>빠른 메뉴</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <Button
                 variant="outline"
                 className="h-24 flex flex-col gap-2"
@@ -142,22 +142,6 @@ export default function InstructorDashboardPage(props: {
               >
                 <FileText className="h-6 w-6" />
                 <span className="text-sm">과제 관리</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-24 flex flex-col gap-2"
-                disabled
-              >
-                <Users className="h-6 w-6" />
-                <span className="text-sm">수강생 관리</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-24 flex flex-col gap-2"
-                disabled
-              >
-                <Clock className="h-6 w-6" />
-                <span className="text-sm">일정 관리</span>
               </Button>
             </div>
           </CardContent>
