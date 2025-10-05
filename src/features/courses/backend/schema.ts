@@ -57,3 +57,26 @@ export const ProfileTableRowSchema = z.object({
 });
 
 export type ProfileTableRow = z.infer<typeof ProfileTableRowSchema>;
+
+// Instructor dashboard stats response
+export const InstructorDashboardStatsSchema = z.object({
+  totalCourses: z.number().int().nonnegative(),
+  pendingGrading: z.number().int().nonnegative(),
+  totalStudents: z.number().int().nonnegative(),
+  todaySubmissions: z.number().int().nonnegative(),
+  courses: z.array(z.object({
+    id: z.string().uuid(),
+    title: z.string(),
+    enrollmentCount: z.number().int().nonnegative(),
+    assignmentCount: z.number().int().nonnegative(),
+  })),
+  recentSubmissions: z.array(z.object({
+    id: z.string().uuid(),
+    assignmentId: z.string().uuid(),
+    assignmentTitle: z.string(),
+    learnerName: z.string(),
+    submittedAt: z.string(),
+  })),
+});
+
+export type InstructorDashboardStats = z.infer<typeof InstructorDashboardStatsSchema>;

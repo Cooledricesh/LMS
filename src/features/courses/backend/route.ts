@@ -6,7 +6,8 @@ import {
   CourseListRequestSchema,
   type CourseListRequest,
 } from '@/features/courses/backend/schema';
-import { getCourseList, getCourseById } from '@/features/courses/backend/service';
+import { getCourseList, getCourseById, getInstructorDashboardStats } from '@/features/courses/backend/service';
+import { getAuthUser } from '@/backend/middleware/auth';
 import { courseErrorCodes, type CourseServiceError } from '@/features/courses/backend/error';
 
 const CourseIdParamsSchema = z.object({
@@ -77,6 +78,34 @@ export const registerCoursesRoutes = (app: Hono<AppEnv>) => {
 
     if (!result.ok) {
       logger.error('Failed to fetch course details', result);
+    }
+
+    return respond(c, result);
+  });
+
+  // GET /api/courses/instructor/dashboard/stats - Get instructor dashboard statistics
+  app.get('/api/courses/instructor/dashboard/stats', async (c) => {
+    const supabase = getSupabase(c);
+    const logger = getLogger(c);
+    const user = getAuthUser(c);
+
+    if (!user) {
+      return respond(
+        c,
+        failure(
+          401,
+          courseErrorCodes.invalidParams,
+          'Authorization token required'
+        )
+      );
+    }
+
+    logger.info('Fetching instructor dashboard stats', { userId: user.id });
+
+    const result = await getInstructorDashboardStats(supabase, user.id);
+
+    if (!result.ok) {
+      logger.error('Failed to fetch instructor dashboard stats', result);
     }
 
     return respond(c, result);

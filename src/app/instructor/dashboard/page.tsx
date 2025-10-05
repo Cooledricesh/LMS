@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { useInstructorDashboardStats } from "@/features/courses/hooks/useInstructorDashboardStats";
 import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
@@ -14,6 +15,7 @@ export default function InstructorDashboardPage(props: {
 }) {
   const router = useRouter();
   const { user, refresh } = useCurrentUser();
+  const { data: stats, isLoading, error } = useInstructorDashboardStats();
 
   const handleLogout = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
@@ -57,7 +59,9 @@ export default function InstructorDashboardPage(props: {
               <BookOpen className="h-4 w-4 text-gray-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">
+                {isLoading ? "..." : stats?.totalCourses ?? 0}
+              </div>
               <p className="text-xs text-gray-500">
                 운영 중인 코스 수
               </p>
@@ -72,7 +76,9 @@ export default function InstructorDashboardPage(props: {
               <FileText className="h-4 w-4 text-gray-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">
+                {isLoading ? "..." : stats?.pendingGrading ?? 0}
+              </div>
               <p className="text-xs text-gray-500">
                 미채점 제출물
               </p>
@@ -87,7 +93,9 @@ export default function InstructorDashboardPage(props: {
               <Users className="h-4 w-4 text-gray-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">
+                {isLoading ? "..." : stats?.totalStudents ?? 0}
+              </div>
               <p className="text-xs text-gray-500">
                 전체 수강생 수
               </p>
@@ -102,7 +110,9 @@ export default function InstructorDashboardPage(props: {
               <Clock className="h-4 w-4 text-gray-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">
+                {isLoading ? "..." : stats?.todaySubmissions ?? 0}
+              </div>
               <p className="text-xs text-gray-500">
                 오늘 제출된 과제
               </p>
@@ -110,20 +120,109 @@ export default function InstructorDashboardPage(props: {
           </Card>
         </div>
 
-        {/* Placeholder sections */}
+        {/* Quick Actions */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>빠른 메뉴</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col gap-2"
+                onClick={() => router.push('/learner/courses')}
+              >
+                <BookOpen className="h-6 w-6" />
+                <span className="text-sm">코스 탐색</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col gap-2"
+                onClick={() => {
+                  if (stats?.courses && stats.courses.length > 0) {
+                    router.push(`/instructor/courses/${stats.courses[0].id}/assignments`);
+                  }
+                }}
+                disabled={!stats?.courses || stats.courses.length === 0}
+              >
+                <FileText className="h-6 w-6" />
+                <span className="text-sm">과제 관리</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col gap-2"
+                disabled
+              >
+                <Users className="h-6 w-6" />
+                <span className="text-sm">수강생 관리</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col gap-2"
+                disabled
+              >
+                <Clock className="h-6 w-6" />
+                <span className="text-sm">일정 관리</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* My Courses List */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
               <CardTitle>내 코스 목록</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12 text-gray-500">
-                <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p>아직 개설한 코스가 없습니다</p>
-                <Button className="mt-4" variant="outline">
-                  코스 만들기
-                </Button>
-              </div>
+              {isLoading ? (
+                <div className="text-center py-12 text-gray-500">
+                  로딩 중...
+                </div>
+              ) : !stats?.courses || stats.courses.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p>아직 개설한 코스가 없습니다</p>
+                  <Button
+                    className="mt-4"
+                    variant="outline"
+                    onClick={() => router.push('/learner/courses')}
+                  >
+                    코스 탐색하기
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {stats.courses.slice(0, 3).map((course) => (
+                    <div
+                      key={course.id}
+                      className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => router.push(`/instructor/courses/${course.id}/assignments`)}
+                    >
+                      <h3 className="font-semibold text-sm mb-1">{course.title}</h3>
+                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {course.enrollmentCount}명
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <FileText className="h-3 w-3" />
+                          {course.assignmentCount}개 과제
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {stats.courses.length > 3 && (
+                    <Button
+                      variant="link"
+                      className="w-full"
+                      onClick={() => router.push('/learner/courses')}
+                    >
+                      모든 코스 보기
+                    </Button>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -132,40 +231,49 @@ export default function InstructorDashboardPage(props: {
               <CardTitle>최근 제출물</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12 text-gray-500">
-                <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                <p>채점 대기 중인 제출물이 없습니다</p>
-              </div>
+              {isLoading ? (
+                <div className="text-center py-12 text-gray-500">
+                  로딩 중...
+                </div>
+              ) : !stats?.recentSubmissions || stats.recentSubmissions.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p>최근 제출물이 없습니다</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {stats.recentSubmissions.slice(0, 3).map((submission) => (
+                    <div
+                      key={submission.id}
+                      className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                      onClick={() => router.push(`/instructor/assignments/${submission.assignmentId}/submissions`)}
+                    >
+                      <h3 className="font-semibold text-sm mb-1">{submission.assignmentTitle}</h3>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <span>{submission.learnerName}</span>
+                        <span>•</span>
+                        <span>{new Date(submission.submittedAt).toLocaleDateString('ko-KR')}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {stats.recentSubmissions.length > 3 && (
+                    <Button
+                      variant="link"
+                      className="w-full"
+                      onClick={() => {
+                        if (stats?.courses && stats.courses.length > 0) {
+                          router.push(`/instructor/courses/${stats.courses[0].id}/assignments`);
+                        }
+                      }}
+                    >
+                      모든 제출물 보기
+                    </Button>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
-
-        {/* Navigation Menu (Future) */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>빠른 메뉴</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Button variant="outline" className="h-24 flex flex-col gap-2">
-                <BookOpen className="h-6 w-6" />
-                <span className="text-sm">코스 관리</span>
-              </Button>
-              <Button variant="outline" className="h-24 flex flex-col gap-2">
-                <FileText className="h-6 w-6" />
-                <span className="text-sm">과제 관리</span>
-              </Button>
-              <Button variant="outline" className="h-24 flex flex-col gap-2">
-                <Users className="h-6 w-6" />
-                <span className="text-sm">수강생 관리</span>
-              </Button>
-              <Button variant="outline" className="h-24 flex flex-col gap-2">
-                <Clock className="h-6 w-6" />
-                <span className="text-sm">일정 관리</span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </main>
     </div>
   );

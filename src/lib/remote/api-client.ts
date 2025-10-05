@@ -109,6 +109,19 @@ class FetchClient {
     });
   }
 
+  async patch<T = any>(
+    url: string,
+    options?: RequestInit & { json?: any }
+  ): Promise<Response> {
+    const { json, ...restOptions } = options || {};
+
+    return this.request<T>(url, {
+      ...restOptions,
+      method: "PATCH",
+      body: json ? JSON.stringify(json) : restOptions.body,
+    });
+  }
+
   async delete<T = any>(url: string, options?: RequestInit): Promise<Response> {
     return this.request<T>(url, {
       ...options,

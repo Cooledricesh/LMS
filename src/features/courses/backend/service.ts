@@ -12,10 +12,12 @@ import {
   CourseDetailResponseSchema,
   CourseTableRowSchema,
   ProfileTableRowSchema,
+  InstructorDashboardStatsSchema,
   type CourseResponse,
   type CourseDetailResponse,
   type CourseTableRow,
   type ProfileTableRow,
+  type InstructorDashboardStats,
 } from '@/features/courses/backend/schema';
 import { courseErrorCodes, type CourseServiceError } from '@/features/courses/backend/error';
 
@@ -23,6 +25,7 @@ const COURSES_TABLE = 'courses';
 const PROFILES_TABLE = 'profiles';
 const ENROLLMENTS_TABLE = 'enrollments';
 const ASSIGNMENTS_TABLE = 'assignments';
+const SUBMISSIONS_TABLE = 'submissions';
 
 /**
  * Get paginated list of published courses with filters
@@ -250,5 +253,181 @@ export const getCourseEnrollmentCount = async (
   } catch (error) {
     console.error('Failed to fetch enrollment count:', error);
     return failure(500, courseErrorCodes.fetchError, 'Failed to fetch enrollment count');
+  }
+};
+
+/**
+ * Get instructor dashboard statistics
+ */
+export const getInstructorDashboardStats = async (
+  client: SupabaseClient,
+  instructorId: string
+): Promise<HandlerResult<InstructorDashboardStats, CourseServiceError, unknown>> => {
+  try {
+    // Get total courses count
+    const { count: totalCourses, error: coursesError } = await client
+      .from(COURSES_TABLE)
+      .select('*', { count: 'exact', head: true })
+      .eq('instructor_id', instructorId);
+
+    if (coursesError) {
+      return failure(500, courseErrorCodes.fetchError, coursesError.message);
+    }
+
+    // Get instructor's courses first
+    const { data: coursesData, error: coursesDataError } = await client
+      .from(COURSES_TABLE)
+      .select('id')
+      .eq('instructor_id', instructorId);
+
+    if (coursesDataError) {
+      console.error('Failed to fetch courses:', coursesDataError);
+      return failure(500, courseErrorCodes.fetchError, coursesDataError.message);
+    }
+
+    const courseIds = coursesData?.map(c => c.id) || [];
+
+    // Get pending grading count (submissions with status 'submitted')
+    let assignmentIds: string[] = [];
+    if (courseIds.length > 0) {
+      const { data: assignmentsData, error: assignmentsError } = await client
+        .from(ASSIGNMENTS_TABLE)
+        .select('id')
+        .in('course_id', courseIds);
+
+      if (assignmentsError) {
+        console.error('Failed to fetch assignments:', assignmentsError);
+        return failure(500, courseErrorCodes.fetchError, assignmentsError.message);
+      }
+
+      assignmentIds = assignmentsData?.map(a => a.id) || [];
+    }
+
+    let pendingGrading = 0;
+    if (assignmentIds.length > 0) {
+      const { count: pendingCount, error: pendingError } = await client
+        .from(SUBMISSIONS_TABLE)
+        .select('*', { count: 'exact', head: true })
+        .in('assignment_id', assignmentIds)
+        .eq('status', 'submitted');
+
+      if (pendingError) {
+        console.error('Failed to fetch pending submissions:', pendingError);
+      } else {
+        pendingGrading = pendingCount || 0;
+      }
+    }
+
+    // Get total students (unique learners enrolled in instructor's courses)
+    let totalStudents = 0;
+    if (courseIds.length > 0) {
+      const { data: enrollmentsData, error: enrollmentsError } = await client
+        .from(ENROLLMENTS_TABLE)
+        .select('learner_id')
+        .in('course_id', courseIds);
+
+      if (enrollmentsError) {
+        console.error('Failed to fetch enrollments:', enrollmentsError);
+        return failure(500, courseErrorCodes.fetchError, enrollmentsError.message);
+      }
+
+      // Count unique learners
+      const uniqueLearners = new Set(enrollmentsData?.map(e => e.learner_id) || []);
+      totalStudents = uniqueLearners.size;
+    }
+
+    // Get today's submissions
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayISO = today.toISOString();
+
+    let todaySubmissions = 0;
+    if (assignmentIds.length > 0) {
+      const { count: todayCount, error: todayError } = await client
+        .from(SUBMISSIONS_TABLE)
+        .select('*', { count: 'exact', head: true })
+        .in('assignment_id', assignmentIds)
+        .gte('submitted_at', todayISO);
+
+      if (todayError) {
+        console.error('Failed to fetch today submissions:', todayError);
+      } else {
+        todaySubmissions = todayCount || 0;
+      }
+    }
+
+    // Get courses list with enrollment and assignment counts
+    const { data: coursesListData, error: coursesListError } = await client
+      .from(COURSES_TABLE)
+      .select(`
+        id,
+        title,
+        enrollments:enrollments(count),
+        assignments:assignments(count)
+      `)
+      .eq('instructor_id', instructorId)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    if (coursesListError) {
+      console.error('Failed to fetch courses list:', coursesListError);
+    }
+
+    const coursesList = coursesListData?.map((course: any) => ({
+      id: course.id,
+      title: course.title,
+      enrollmentCount: course.enrollments?.[0]?.count || 0,
+      assignmentCount: course.assignments?.[0]?.count || 0,
+    })) || [];
+
+    // Get recent submissions
+    let recentSubmissions: any[] = [];
+    if (assignmentIds.length > 0) {
+      const { data: submissionsData, error: submissionsError } = await client
+        .from(SUBMISSIONS_TABLE)
+        .select(`
+          id,
+          assignment_id,
+          submitted_at,
+          assignments:assignments(title),
+          learner:profiles(name)
+        `)
+        .in('assignment_id', assignmentIds)
+        .order('submitted_at', { ascending: false })
+        .limit(5);
+
+      if (submissionsError) {
+        console.error('Failed to fetch recent submissions:', submissionsError);
+      } else {
+        recentSubmissions = submissionsData?.map((sub: any) => ({
+          id: sub.id,
+          assignmentId: sub.assignment_id,
+          assignmentTitle: sub.assignments?.title || 'Unknown Assignment',
+          learnerName: sub.learner?.name || 'Unknown Learner',
+          submittedAt: sub.submitted_at,
+        })) || [];
+      }
+    }
+
+    const stats: InstructorDashboardStats = {
+      totalCourses: totalCourses || 0,
+      pendingGrading,
+      totalStudents,
+      todaySubmissions,
+      courses: coursesList,
+      recentSubmissions,
+    };
+
+    const validated = InstructorDashboardStatsSchema.safeParse(stats);
+
+    if (!validated.success) {
+      console.error('Stats validation failed:', validated.error);
+      return failure(500, courseErrorCodes.fetchError, 'Stats validation failed');
+    }
+
+    return success(validated.data);
+  } catch (error) {
+    console.error('Failed to fetch instructor dashboard stats:', error);
+    return failure(500, courseErrorCodes.fetchError, 'Failed to fetch dashboard stats');
   }
 };

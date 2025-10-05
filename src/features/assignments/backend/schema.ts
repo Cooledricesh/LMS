@@ -102,3 +102,68 @@ export const CourseWithInstructorRowSchema = z.object({
 });
 
 export type CourseWithInstructorRow = z.infer<typeof CourseWithInstructorRowSchema>;
+
+// ============================================
+// Assignment Management Schemas
+// ============================================
+
+// Create Assignment Request
+export const CreateAssignmentRequestSchema = z.object({
+  courseId: z.string().uuid('유효하지 않은 코스 ID입니다'),
+  title: z.string().min(1, '제목을 입력해주세요').max(200, '제목은 200자를 초과할 수 없습니다'),
+  description: z.string().min(1, '설명을 입력해주세요').max(5000, '설명은 5000자를 초과할 수 없습니다'),
+  dueDate: z.string().datetime('유효한 날짜 형식이 아닙니다'),
+  weight: z.number().int().min(0, '점수 비중은 0 이상이어야 합니다').max(100, '점수 비중은 100 이하여야 합니다'),
+  allowLate: z.boolean().default(false),
+  allowResubmission: z.boolean().default(false),
+});
+
+export type CreateAssignmentRequest = z.infer<typeof CreateAssignmentRequestSchema>;
+
+// Update Assignment Request
+export const UpdateAssignmentRequestSchema = z.object({
+  title: z.string().min(1, '제목을 입력해주세요').max(200, '제목은 200자를 초과할 수 없습니다').optional(),
+  description: z.string().min(1, '설명을 입력해주세요').max(5000, '설명은 5000자를 초과할 수 없습니다').optional(),
+  dueDate: z.string().datetime('유효한 날짜 형식이 아닙니다').optional(),
+  weight: z.number().int().min(0, '점수 비중은 0 이상이어야 합니다').max(100, '점수 비중은 100 이하여야 합니다').optional(),
+  allowLate: z.boolean().optional(),
+  allowResubmission: z.boolean().optional(),
+});
+
+export type UpdateAssignmentRequest = z.infer<typeof UpdateAssignmentRequestSchema>;
+
+// Assignment Management Response
+export const AssignmentManagementResponseSchema = z.object({
+  id: z.string().uuid(),
+  courseId: z.string().uuid(),
+  title: z.string(),
+  description: z.string(),
+  dueDate: z.string(),
+  weight: z.number().min(0).max(100),
+  allowLate: z.boolean(),
+  allowResubmission: z.boolean(),
+  status: z.enum(['draft', 'published', 'closed']),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export type AssignmentManagementResponse = z.infer<typeof AssignmentManagementResponseSchema>;
+
+// Instructor Assignment List Item (with submission stats)
+export const InstructorAssignmentListItemSchema = z.object({
+  id: z.string().uuid(),
+  courseId: z.string().uuid(),
+  title: z.string(),
+  description: z.string(),
+  dueDate: z.string(),
+  weight: z.number(),
+  allowLate: z.boolean(),
+  allowResubmission: z.boolean(),
+  status: z.enum(['draft', 'published', 'closed']),
+  totalSubmissions: z.number().int(),
+  gradedSubmissions: z.number().int(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export type InstructorAssignmentListItem = z.infer<typeof InstructorAssignmentListItemSchema>;
