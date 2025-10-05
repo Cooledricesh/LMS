@@ -8,65 +8,84 @@ export class LearnerService {
    * 사용자의 수강 중인 코스 목록 조회
    */
   async getEnrolledCourses(learnerId: string): Promise<EnrolledCourse[]> {
-    const { data: enrollments, error } = await this.supabase
+    // 먼저 enrollments 조회
+    const { data: enrollments, error: enrollmentError } = await this.supabase
       .from('enrollments')
-      .select(`
-        id,
-        learner_id,
-        course_id,
-        progress,
-        enrolled_at,
-        completed_at,
-        last_accessed_at,
-        courses (
-          id,
-          title,
-          description,
-          thumbnail,
-          category,
-          difficulty,
-          instructor_id,
-          profiles!courses_instructor_id_fkey (
-            id,
-            name,
-            email
-          )
-        )
-      `)
+      .select('*')
       .eq('learner_id', learnerId)
       .order('enrolled_at', { ascending: false });
 
-    if (error) {
-      throw new Error(`Failed to fetch enrolled courses: ${error.message}`);
+    if (enrollmentError) {
+      throw new Error(`Failed to fetch enrollments: ${enrollmentError.message}`);
     }
 
-    if (!enrollments) {
+    if (!enrollments || enrollments.length === 0) {
       return [];
     }
 
-    // 데이터 형식 변환
-    return enrollments.map((enrollment: any) => ({
-      id: enrollment.id,
-      learner_id: enrollment.learner_id,
-      course_id: enrollment.course_id,
-      progress: enrollment.progress || 0,
-      enrolled_at: enrollment.enrolled_at,
-      completed_at: enrollment.completed_at,
-      last_accessed_at: enrollment.last_accessed_at,
-      course: {
-        id: enrollment.courses.id,
-        title: enrollment.courses.title,
-        description: enrollment.courses.description,
-        thumbnail: enrollment.courses.thumbnail,
-        category: enrollment.courses.category,
-        difficulty: enrollment.courses.difficulty,
-        instructor: {
-          id: enrollment.courses.profiles.id,
-          name: enrollment.courses.profiles.name,
-          email: enrollment.courses.profiles.email,
+    // 각 enrollment에 대해 course 정보 조회
+    const courseIds = enrollments.map(e => e.course_id);
+
+    // 먼저 courses만 조회
+    const { data: courses, error: coursesError } = await this.supabase
+      .from('courses')
+      .select('*')
+      .in('id', courseIds);
+
+    if (coursesError) {
+      throw new Error(`Failed to fetch courses: ${coursesError.message}`);
+    }
+
+    if (!courses || courses.length === 0) {
+      return [];
+    }
+
+    // instructor 정보 조회
+    const instructorIds = [...new Set(courses.map(c => c.instructor_id))];
+    const { data: instructors, error: instructorsError } = await this.supabase
+      .from('profiles')
+      .select('id, name, email')
+      .in('id', instructorIds);
+
+    // enrollments와 courses, instructors 매핑
+    const result = enrollments.map(enrollment => {
+      const course = courses?.find(c => c.id === enrollment.course_id);
+
+      if (!course) {
+        return null;
+      }
+
+      const instructor = instructors?.find(i => i.id === course.instructor_id);
+
+      return {
+        id: enrollment.id,
+        learner_id: enrollment.learner_id,
+        course_id: enrollment.course_id,
+        progress: enrollment.progress ?? 0,
+        enrolled_at: enrollment.enrolled_at,
+        completed_at: enrollment.completed_at ?? null,
+        last_accessed_at: enrollment.last_accessed_at ?? null,
+        course: {
+          id: course.id,
+          title: course.title,
+          description: course.description,
+          thumbnail: course.thumbnail ?? null,
+          category: course.category,
+          difficulty: course.difficulty,
+          instructor: instructor ? {
+            id: instructor.id,
+            name: instructor.name,
+            email: instructor.email,
+          } : {
+            id: course.instructor_id,
+            name: 'Unknown Instructor',
+            email: 'unknown@example.com',
+          },
         },
-      },
-    }));
+      };
+    }).filter(Boolean) as EnrolledCourse[];
+
+    return result;
   }
 
   /**

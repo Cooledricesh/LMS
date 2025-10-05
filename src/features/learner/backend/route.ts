@@ -37,11 +37,8 @@ export const learnerRoutes = new Hono<AppEnv>()
       // 스키마 검증
       const validated = enrolledCoursesResponseSchema.parse(enrolledCourses);
 
-      logger.info(`Fetched ${validated.length} enrolled courses for user ${user.id}`);
-
       return respond(c, success(validated));
     } catch (error) {
-      logger.error('Failed to fetch enrolled courses:', error);
       return respond(c, failure(
         500,
         'INTERNAL_ERROR',

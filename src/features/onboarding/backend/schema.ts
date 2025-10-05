@@ -1,6 +1,25 @@
 import { z } from 'zod';
 
-// 회원가입 요청 스키마
+// 프로필 생성 요청 스키마 (백엔드 API용)
+export const CreateProfileRequestSchema = z.object({
+  userId: z.string().uuid({ message: '유효한 사용자 ID가 아닙니다.' }),
+  email: z.string().email({ message: '올바른 이메일 형식이 아닙니다.' }),
+  role: z.enum(['learner', 'instructor'], {
+    errorMap: () => ({ message: '역할은 learner 또는 instructor여야 합니다.' })
+  }),
+  name: z.string().min(1, { message: '이름은 필수입니다.' }),
+  phoneNumber: z.string()
+    .regex(/^(010|011|016|017|018|019)-?\d{3,4}-?\d{4}$/,
+      { message: '올바른 휴대폰번호 형식이 아닙니다.' }),
+  termsAgreed: z.object({
+    service: z.boolean(),
+    privacy: z.boolean(),
+  }),
+});
+
+export type CreateProfileRequest = z.infer<typeof CreateProfileRequestSchema>;
+
+// 클라이언트 회원가입 요청 스키마
 export const SignupRequestSchema = z.object({
   email: z.string().email({ message: '올바른 이메일 형식이 아닙니다.' }),
   password: z.string()

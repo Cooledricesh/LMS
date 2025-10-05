@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { LogOut, BookOpen, Clock, Trophy, ChevronRight } from 'lucide-react';
+import { LogOut, BookOpen, Clock, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,7 +43,6 @@ export default function LearnerDashboardPage() {
     queryFn: async () => {
       const response = await apiClient.get('/api/learner/enrolled-courses');
       const data = await response.json();
-      // API 응답이 직접 배열을 반환 (respond 함수가 data를 직접 반환)
       return (Array.isArray(data) ? data : []) as EnrolledCourse[];
     },
     enabled: !!user,

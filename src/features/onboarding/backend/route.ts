@@ -9,7 +9,7 @@ import {
   getSupabase,
   type AppEnv,
 } from '@/backend/hono/context';
-import { SignupRequestSchema } from '@/features/onboarding/backend/schema';
+import { CreateProfileRequestSchema } from '@/features/onboarding/backend/schema';
 import { createUserProfile } from './service';
 import {
   onboardingErrorCodes,
@@ -17,7 +17,8 @@ import {
 } from './error';
 
 export const registerOnboardingRoutes = (app: Hono<AppEnv>) => {
-  app.post('/api/onboarding/signup', async (c) => {
+  // 프로필 생성 엔드포인트 (Auth는 클라이언트에서 처리)
+  app.post('/api/onboarding/create-profile', async (c) => {
     const logger = getLogger(c);
 
     // Content-Type 확인
@@ -48,7 +49,7 @@ export const registerOnboardingRoutes = (app: Hono<AppEnv>) => {
       );
     }
 
-    const parsedRequest = SignupRequestSchema.safeParse(body);
+    const parsedRequest = CreateProfileRequestSchema.safeParse(body);
 
     if (!parsedRequest.success) {
       return respond(
@@ -56,7 +57,7 @@ export const registerOnboardingRoutes = (app: Hono<AppEnv>) => {
         failure(
           400,
           onboardingErrorCodes.invalidInput,
-          'Invalid signup data',
+          'Invalid profile data',
           parsedRequest.error.format()
         )
       );
@@ -80,12 +81,12 @@ export const registerOnboardingRoutes = (app: Hono<AppEnv>) => {
       const errorResult = result as ErrorResult<OnboardingServiceError, unknown>;
 
       // 특정 에러 로깅
-      if (errorResult.error.code === onboardingErrorCodes.authSignupFailed ||
-          errorResult.error.code === onboardingErrorCodes.profileCreationFailed ||
+      if (errorResult.error.code === onboardingErrorCodes.profileCreationFailed ||
           errorResult.error.code === onboardingErrorCodes.termsAgreementFailed) {
-        logger.error('Signup failed', {
+        logger.error('Profile creation failed', {
           code: errorResult.error.code,
           message: errorResult.error.message,
+          userId: parsedRequest.data.userId,
           email: parsedRequest.data.email,
         });
       }
@@ -93,7 +94,7 @@ export const registerOnboardingRoutes = (app: Hono<AppEnv>) => {
       return respond(c, result);
     }
 
-    logger.info('User signup successful', {
+    logger.info('User profile created successfully', {
       userId: result.data.userId,
       email: result.data.email,
       role: result.data.role,

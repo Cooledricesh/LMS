@@ -1,13 +1,64 @@
 import { apiClient } from '@/lib/remote/api-client';
-import type { SignupRequest, SignupResponse } from './dto';
+import { createClient } from '@/lib/supabase/client';
+import type { CreateProfileRequest, SignupRequest, SignupResponse } from './dto';
 import type { TermsResponse } from '@/features/terms/lib/dto';
 import { ValidationException, type ApiErrorResponse } from './error';
 
 /**
- * 회원가입 API
+ * 회원가입 API - Supabase Auth 사용 후 프로필 생성
  */
 export const signup = async (data: SignupRequest): Promise<SignupResponse> => {
-  const response = await apiClient.post('/api/onboarding/signup', {
+  const supabase = createClient();
+
+  // 1단계: Supabase Auth로 사용자 생성
+  const { data: authData, error: authError } = await supabase.auth.signUp({
+    email: data.email,
+    password: data.password,
+    options: {
+      emailRedirectTo: `${window.location.origin}/auth/callback`,
+    },
+  });
+
+  if (authError) {
+    // 이미 등록된 이메일 에러
+    if (authError.message?.includes('already registered')) {
+      throw new Error('이미 등록된 이메일입니다');
+    }
+    throw new Error(authError.message || '회원가입에 실패했습니다');
+  }
+
+  if (!authData.user) {
+    throw new Error('사용자 생성에 실패했습니다');
+  }
+
+  // 2단계: 프로필 생성
+  try {
+    const profileData: CreateProfileRequest = {
+      userId: authData.user.id,
+      email: data.email,
+      role: data.role,
+      name: data.name,
+      phoneNumber: data.phoneNumber,
+      termsAgreed: data.termsAgreed,
+    };
+
+    const profileResponse = await createProfile(profileData);
+    return profileResponse;
+  } catch (error) {
+    // 프로필 생성 실패 시 Auth 사용자 삭제 시도
+    // (Note: Supabase는 일반적으로 사용자 삭제를 허용하지 않으므로 이는 보통 실패함)
+    console.error('프로필 생성 실패:', error);
+
+    // 원본 에러를 그대로 throw
+    throw error;
+  }
+};
+
+/**
+ * 프로필 생성 API (Auth는 클라이언트에서 처리)
+ */
+export const createProfile = async (data: CreateProfileRequest): Promise<SignupResponse> => {
+  const response = await apiClient.post('/api/onboarding/create-profile', {
     json: data,
   });
 
@@ -25,7 +76,7 @@ export const signup = async (data: SignupRequest): Promise<SignupResponse> => {
     }
 
     // 일반 에러
-    throw new Error(error?.message || '회원가입에 실패했습니다');
+    throw new Error(error?.message || '프로필 생성에 실패했습니다');
   }
 
   // respond 함수는 성공시 데이터를 바로 반환함

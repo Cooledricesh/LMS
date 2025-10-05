@@ -5,10 +5,10 @@ import {
   type HandlerResult,
 } from '@/backend/http/response';
 import {
-  SignupRequestSchema,
+  CreateProfileRequestSchema,
   SignupResponseSchema,
   ProfileTableRowSchema,
-  type SignupRequest,
+  type CreateProfileRequest,
   type SignupResponse,
   type ProfileRow,
   type TermsAgreementRow,
@@ -22,24 +22,15 @@ const PROFILES_TABLE = 'profiles';
 const TERMS_AGREEMENTS_TABLE = 'terms_agreements';
 const CURRENT_TERMS_VERSION = '1.0.0';
 
+// 프로필만 생성하는 함수 (Auth는 클라이언트에서 처리)
 export const createUserProfile = async (
   client: SupabaseClient,
-  data: SignupRequest,
+  data: CreateProfileRequest,
   ipAddress?: string,
   userAgent?: string
 ): Promise<HandlerResult<SignupResponse, OnboardingServiceError, unknown>> => {
   // 입력 데이터 검증
-  const parsedData = SignupRequestSchema.safeParse(data);
-  if (!parsedData.success) {
-    return failure(
-      400,
-      onboardingErrorCodes.invalidInput,
-      'Invalid input data',
-      parsedData.error.format()
-    );
-  }
-
-  const { email, password, role, name, phoneNumber, termsAgreed } = parsedData.data;
+  const { userId, email, role, name, phoneNumber, termsAgreed } = data;
 
   // 약관 동의 확인
   if (!termsAgreed.service || !termsAgreed.privacy) {
@@ -51,47 +42,9 @@ export const createUserProfile = async (
   }
 
   try {
-    // 1. Supabase Auth로 계정 생성
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    const { data: authData, error: authError } = await client.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          role,
-          name,
-        },
-        emailRedirectTo: `${siteUrl}/auth/callback`
-      }
-    });
-
-    if (authError) {
-      // 이메일 중복 체크
-      if (authError.message?.toLowerCase().includes('already registered')) {
-        return failure(
-          409,
-          onboardingErrorCodes.emailAlreadyExists,
-          'This email is already registered'
-        );
-      }
-      return failure(
-        500,
-        onboardingErrorCodes.authSignupFailed,
-        authError.message || 'Failed to create auth account'
-      );
-    }
-
-    if (!authData.user) {
-      return failure(
-        500,
-        onboardingErrorCodes.authSignupFailed,
-        'Failed to create user account'
-      );
-    }
-
-    // 2. 프로필 정보 저장
+    // 1. 프로필 정보 저장
     const profileData = {
-      id: authData.user.id,
+      id: userId, // 클라이언트에서 전달받은 Auth user ID
       role,
       name,
       phone_number: phoneNumber.replace(/-/g, ''), // 하이픈 제거
@@ -105,9 +58,6 @@ export const createUserProfile = async (
       .single<ProfileRow>();
 
     if (profileError) {
-      // Auth 계정 삭제 (롤백)
-      await client.auth.admin.deleteUser(authData.user.id);
-
       return failure(
         500,
         onboardingErrorCodes.profileCreationFailed,
@@ -125,10 +75,10 @@ export const createUserProfile = async (
       );
     }
 
-    // 3. 약관 동의 이력 저장
+    // 2. 약관 동의 이력 저장
     const termsAgreements = [
       {
-        user_id: authData.user.id,
+        user_id: userId,
         terms_version: CURRENT_TERMS_VERSION,
         terms_type: 'service' as const,
         agreed_at: new Date().toISOString(),
@@ -136,7 +86,7 @@ export const createUserProfile = async (
         user_agent: userAgent || null,
       },
       {
-        user_id: authData.user.id,
+        user_id: userId,
         terms_version: CURRENT_TERMS_VERSION,
         terms_type: 'privacy' as const,
         agreed_at: new Date().toISOString(),
@@ -150,9 +100,8 @@ export const createUserProfile = async (
       .insert(termsAgreements);
 
     if (termsError) {
-      // 프로필과 Auth 계정 삭제 (롤백)
-      await client.from(PROFILES_TABLE).delete().eq('id', authData.user.id);
-      await client.auth.admin.deleteUser(authData.user.id);
+      // 프로필 삭제 (롤백)
+      await client.from(PROFILES_TABLE).delete().eq('id', userId);
 
       return failure(
         500,
@@ -161,7 +110,7 @@ export const createUserProfile = async (
       );
     }
 
-    // 4. 응답 데이터 생성
+    // 3. 응답 데이터 생성
     const response = {
       userId: rowParse.data.id,
       email,
