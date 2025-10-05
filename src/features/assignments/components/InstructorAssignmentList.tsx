@@ -14,7 +14,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, AlertCircle, Plus } from 'lucide-react';
+import { Loader2, AlertCircle, Plus, ArrowLeft } from 'lucide-react';
 import { useInstructorAssignments } from '../hooks/useInstructorAssignments';
 import { AssignmentStatusBadge } from './AssignmentStatusBadge';
 import { AssignmentActions } from './AssignmentActions';
@@ -57,7 +57,17 @@ export const InstructorAssignmentList: React.FC<InstructorAssignmentListProps> =
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">과제 목록</h2>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            onClick={() => router.push('/instructor/dashboard')}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            대시보드로
+          </Button>
+          <h2 className="text-2xl font-bold">과제 목록</h2>
+        </div>
         <Button onClick={handleCreate}>
           <Plus className="h-4 w-4 mr-2" />
           새 과제 만들기

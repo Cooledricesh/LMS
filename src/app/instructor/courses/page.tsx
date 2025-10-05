@@ -98,15 +98,6 @@ export default function InstructorCoursesPage(props: {
                       <FileText className="h-4 w-4 mr-2" />
                       과제 관리
                     </Button>
-
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      disabled
-                    >
-                      <Users className="h-4 w-4 mr-2" />
-                      수강생 관리
-                    </Button>
                   </div>
                 </CardContent>
               </Card>

@@ -14,6 +14,7 @@ import { registerLearnerRoutes } from '@/features/learner/backend/route';
 import { registerTestRoutes } from '@/features/learner/backend/test-route';
 import { registerSubmissionRoutes } from '@/features/submissions/backend/route';
 import { registerGradingRoutes } from '@/features/grading/backend/route';
+import { registerGradesRoutes } from '@/features/grades/backend/route';
 import type { AppEnv } from '@/backend/hono/context';
 
 let singletonApp: Hono<AppEnv> | null = null;
@@ -41,6 +42,7 @@ export const createHonoApp = () => {
   registerTestRoutes(app);
   registerSubmissionRoutes(app);
   registerGradingRoutes(app);
+  registerGradesRoutes(app);
 
   singletonApp = app;
 

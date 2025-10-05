@@ -260,8 +260,8 @@ BEGIN
 
     FOR v_course_id IN (SELECT id FROM courses WHERE status = 'published')
     LOOP
-        -- 각 코스마다 3-5개의 과제 생성
-        FOR i IN 1..3 + floor(random() * 3)::int
+        -- 각 코스마다 4개의 과제 생성 (비중 합계 100%)
+        FOR i IN 1..4
         LOOP
             INSERT INTO assignments (
                 course_id,
@@ -290,9 +290,12 @@ BEGIN
                     ELSE '추가 학습 자료를 참고하여 심화 과제를 수행하세요.'
                 END,
                 NOW() + INTERVAL '7 days' * i,
-                CASE
-                    WHEN i = 4 THEN 40.0  -- 최종 프로젝트는 40%
-                    ELSE 20.0  -- 나머지는 20%
+                CASE i
+                    WHEN 1 THEN 15.0  -- 기초 개념 15%
+                    WHEN 2 THEN 20.0  -- 실습 프로젝트 20%
+                    WHEN 3 THEN 25.0  -- 코드 리뷰 25%
+                    WHEN 4 THEN 40.0  -- 최종 프로젝트 40%
+                    ELSE 0.0
                 END,
                 true,  -- 지각 제출 허용
                 CASE WHEN i < 4 THEN true ELSE false END,  -- 최종 프로젝트 외에는 재제출 허용
