@@ -45,6 +45,8 @@ next-env.d.ts
 
 
 # START Ruler Generated Files
+/.mcp.json
+/.mcp.json.bak
 /CLAUDE.md
 /CLAUDE.md.bak
 # END Ruler Generated Files

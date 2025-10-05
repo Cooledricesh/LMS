@@ -140,6 +140,24 @@ use following libraries for specific functionalities:
 - Always validate user inputs and handle errors gracefully.
 - Use the existing components and pages as a reference for the new components and pages.
 
+## Component Guidelines
+
+- Never use empty string ('') as Select.Item value - use meaningful defaults like 'all' or 'none'
+- Prevent infinite re-renders: use ref flags when syncing URL params with component state
+- Always include `scroll: false` in router.push() when updating filters/pagination
+
+## API & Authentication
+
+- API client must auto-inject Supabase auth token for all requests
+- Profile-based redirects: fetch user profile after login to determine role-specific routes
+- Use consistent path patterns: `/[role]/[feature]` (e.g., `/learner/courses`, `/instructor/dashboard`)
+
+## State Management
+
+- URL-state sync: use debounced updates and guard flags to prevent circular dependencies
+- Filter changes: reset pagination to page 1 when filters change
+- Use `useRef` for tracking update sources (URL vs user interaction)
+
 ## Performance:
 
 - Avoid Premature Optimization
